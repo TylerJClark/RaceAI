@@ -16,4 +16,5 @@ NA = 0.99999
 #deceleration due to braking
 B = 0.9
 
+#SUCK DIIIIIIIIIICK
 
