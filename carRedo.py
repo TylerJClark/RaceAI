@@ -13,6 +13,7 @@ import math
 class Car(object):
     def __init__(self):
         #displacement
+        #this is the middle of the car
         self.pos = np.array([float(0),float(0)])
 
         #speed
@@ -30,6 +31,7 @@ class Car(object):
         self.angle = 0
 
     def getPos(self):
+        #to make it so upwards is positive
         return [self.pos[0],720 - self.pos[1]]
 
     def getAngle(self):
@@ -105,21 +107,9 @@ class Car(object):
     def updatePos(self):
         #self.pos = np.add(self.pos, self.dir * self.spd)
 
+        #makes them move in given direction
         self.pos[0] += self.spd * math.sin(math.radians(self.angle))
         self.pos[1] += self.spd * math.cos(math.radians(self.angle))
-        
-        """if self.angle < 90:
-            self.pos[0] += self.spd * math.sin(math.radians(self.angle))
-            self.pos[1] += self.spd * math.cos(math.radians(self.angle))
-        elif self.angle < 180:
-            self.pos[0] += self.spd * math.cos(math.radians(self.angle - 90))
-            self.pos[1] += self.spd * math.sin(math.radians(self.angle - 90))            
-        elif self.angle < 270:
-            self.pos[0] += self.spd * math.sin(math.radians(self.angle - 180))
-            self.pos[1] += self.spd * math.cos(math.radians(self.angle - 180))
-        else:
-            self.pos[0] += self.spd * math.cos(math.radians(self.angle - 270))
-            self.pos[1] += self.spd * math.sin(math.radians(self.angle - 270))"""
 
             
     #update the pivot point every frame
