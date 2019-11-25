@@ -8,13 +8,13 @@ Created on Fri Nov 22 14:58:26 2019
 THETA = 1
 
 #accelation increase amount every time accelerator is pressed
-A = 1.01
+A = 3
+Amax = 0.15
 
-#percentage deceleration due to resistance
-NA = 0.99999
+#flat deceleration due to resistance
+NA = 0.06
 
 #deceleration due to braking
-B = 0.9
+B = -0.25
 
-#SUCK DIIIIIIIIIICK
-#IDIIIIIIIIIOT
+

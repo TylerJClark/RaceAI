@@ -2,7 +2,7 @@ import pygame
 import math
 import random
 import time
-#import numpy as np
+import numpy as np
 from collections import namedtuple
 #from itertools import count
 import torch
@@ -14,6 +14,7 @@ from ButtonLib import Button
 import os
 import threading
 from copy import deepcopy
+from carRedo import Car
 
 pygame.init()
 pygame.mixer.init() #initialises pygame and sound
@@ -33,11 +34,6 @@ FONT = pygame.font.Font(None, 32) #fonts used in the game
 
 screen = pygame.display.set_mode((width,height),pygame.FULLSCREEN)
 pygame.display.set_caption("RaceAI")
-
-
-
-
-    
 
 
 def tanh(number):
@@ -383,24 +379,30 @@ class playGame():
         self.humanControl = humanControl
         self.viewing = viewing
         self.map = track()
-        self.car = car()
+        self.car = Car()
         self.lastState = None
         self.currentState = None
+        self.game_folder = os.path.dirname(__file__)
+        self.img_folder = os.path.join(self.game_folder,"images") 
+        self.carImage = pygame.image.load(os.path.join(self.img_folder,"car.png")).convert()
 
     def display(self,screen):
+        pos = self.car.getPos()
+        angle = self.car.getAngle()
+        newCar = pygame.transform.rotate(self.carImage,360 - angle)
+        screen.blit(newCar,(pos[0] - 6, pos[1] - 15))
+        #pygame.draw.rect(screen, [255, 255, 255], [pos[0] - 6, pos[1] - 15, 12, 30], False)
         self.map.drawMap(screen,white)
 
-    def update(self,agent = None):
-        if self.humanControl:
-            self.car.handleEvents()
-        else:
+    def update(self,screen,agent = None):
+        if not self.humanControl:
             actions = self.agent.selectAction()
             self.car.performActions(actions)
 
         self.car.updatePerFrame()
-        self.drawCar()
+        
         if self.viewing:
-            self.display()
+            self.display(screen)
 
     #self.state,self.maxActions,self.maxStates = self.env.startGame()
     def startGame(self):
@@ -473,12 +475,12 @@ while running:
         pygame.quit()
 
 
-    if game == "home" or "training":
+    if game == "home" or game == "training":
         viewButton.hovering(pos)
         viewButton.create(screen)
         if viewButton.click(pos,mouseUp):
             game = "viewing"
-            thisGame = playGame()
+            thisGame = playGame(False,True)
 
         trainButton.hovering(pos)
         trainButton.create(screen)
@@ -502,6 +504,7 @@ while running:
         playButton.create(screen)
         if playButton.click(pos,mouseUp):
             game = "playing"
+            thisGame = playGame(True,True)
             
 
         saveButton.hovering(pos)
@@ -510,11 +513,12 @@ while running:
             saveGame()
         
     elif game == "playing":
-        thisGame.update()
-        for event in pygame.event.get():
-            car.handleEvents(event)
+        thisGame.update(screen)
+        keys = pygame.key.get_pressed()
+            
+        thisGame.car.handleEvents(keys)
 
-    pygame.draw.rect(screen, [255, 255, 255], [50, 50, 12, 30], False)
+    
  
     
 
