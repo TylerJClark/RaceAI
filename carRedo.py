@@ -23,22 +23,24 @@ class Car(object):
         #acceleration
         self.acc = float(0)
         
-        self.width = 70
-        self.height = 200
+        self.width = 12
+        self.height = 30
         self.fps = 30
         self.resistance = 0
 
-        self.angle = 0
+        self.angle = float(0)
+        self.drifting = False
+        self.driftingOffset = 0
 
     def getPos(self):
         #to make it so upwards is positive
         return [self.pos[0],720 - self.pos[1]]
 
-    def getAngle(self):
-        return self.angle
+    def getImageAngle(self):
+        return self.angle + self.driftingOffset
     
     #turn left by define amount when left key is pressed
-    def turnLeft(self):
+    def turnLeft(self,drift = False):
         
         #create rotational matrix
         """theta = np.radians(cfg.THETA);
@@ -47,14 +49,15 @@ class Car(object):
         
         #rotate direction the car want to the direction it want to turn to
         self.dir = np.multiply(R, self.dir)"""
-        self.angle -= 3
-        if self.angle < 0:
-            self.angle = 359
+        if not drift:
+            self.decreaseAngle(cfg.THETA)
+        else:
+            self.decreaseAngle(cfg.DRIFT_THETA)
 
         
     
     #turn right by define amount when right key is pressed
-    def turnRight(self):
+    def turnRight(self,drift = False):
         
         #create rotational matrix
         """theta = np.radians(-cfg.THETA);
@@ -63,10 +66,10 @@ class Car(object):
         
         #rotate direction the car want to the direction it want to turn to
         self.dir = np.multiply(R, self.dir)"""
-
-        self.angle += 3
-        if self.angle > 359:
-            self.angle = 0
+        if not drift:
+            self.increaseAngle(cfg.THETA)
+        else:
+            self.increaseAngle(cfg.DRIFT_THETA)
 
         
     #accelerate
@@ -127,40 +130,86 @@ class Car(object):
         #print("vel",self.spd)
         #print("acc",self.acc)
 
+    def increaseAngle(self,amount):
+        self.angle += amount
+        if self.angle > 359:
+            self.angle = 0 + (self.angle - 359)        
+
+    def decreaseAngle(self,amount):
+        self.angle -= amount
+        if self.angle < 0:
+            self.angle = 359 + self.angle 
 
     def handleEvents(self,keys):
-        if keys[pygame.K_a]:
-            self.turnLeft()
-        if keys[pygame.K_d]:
-            self.turnRight()
+        
+        if self.drifting == False:
+            if self.driftingOffset != 0:
+                
+                if self.driftingOffset > 0:
+                    
+                    if self.driftingOffset > cfg.DRIFT_OFFSET:
+                        self.increaseAngle(self.driftingOffset - cfg.DRIFT_OFFSET)
+                    else:
+                        self.decreaseAngle(self.driftingOffset)
+                        
+                elif self.driftingOffset < 0:
+                    
+                    if self.driftingOffset < -cfg.DRIFT_OFFSET:
+                        self.decreaseAngle(abs(self.driftingOffset) - cfg.DRIFT_OFFSET)
+                        
+                    else:
+                        self.decreaseAngle(abs(self.driftingOffset))
+                    
+                self.driftingOffset = 0
+                
+            if keys[pygame.K_a] and keys[pygame.K_SPACE] and self.spd > 3:
+                self.drifting = "left"
+
+                #rotate clockwise
+
+                self.driftingOffset = -cfg.DRIFT_INITIAL
+
+            elif keys[pygame.K_d] and keys[pygame.K_SPACE] and self.spd > 3:
+                self.drifting = "right"
+
+                
+                self.driftingOffset = cfg.DRIFT_INITIAL
+                
+            elif keys[pygame.K_a]:
+                self.turnLeft()
+                
+            elif keys[pygame.K_d]:
+                self.turnRight()
+                
+
+                
+            elif keys[pygame.K_SPACE] or keys[pygame.K_s]:
+                self.brake()
+
             
-        if keys[pygame.K_w]:
+            if keys[pygame.K_w]:
+                self.accelerate()
+
+        elif self.drifting == "right":
+            if self.driftingOffset < 45:
+                self.driftingOffset += 1
+            self.accelerate()
+            if not keys[pygame.K_SPACE]:
+                self.drifting = False
+                
+            elif keys[pygame.K_d]:
+                self.turnRight(drift = True)            
+            
+        elif self.drifting == "left":
+            if self.driftingOffset > -45:
+                self.driftingOffset -= 1
             self.accelerate()
             
-        if keys[pygame.K_SPACE] or keys[pygame.K_s]:
-            self.brake()
-
+            if not keys[pygame.K_SPACE]:
+                self.drifting = False
         
-        
-    
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+            elif keys[pygame.K_a]:
+                self.turnLeft(drift = True)          
         
         
         

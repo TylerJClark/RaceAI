@@ -144,8 +144,7 @@ class DQN(nn.Module):
                 self.fc6 = nn.Linear(in_features=hidden[4], out_features=hidden[5])
             else:
                 self.out = nn.Linear(in_features=hidden[4], out_features=outputs)
-                finished = True
-            
+                finished = True            
             
 
     def forward(self, t):
@@ -388,7 +387,7 @@ class playGame():
 
     def display(self,screen):
         pos = self.car.getPos()
-        angle = self.car.getAngle()
+        angle = self.car.getImageAngle()
         newCar = pygame.transform.rotate(self.carImage,360 - angle)
         screen.blit(newCar,(pos[0] - 6, pos[1] - 15))
         #pygame.draw.rect(screen, [255, 255, 255], [pos[0] - 6, pos[1] - 15, 12, 30], False)
@@ -435,10 +434,6 @@ saveButton = Button(390,550,500,100,grey,blue,True,(0,0,0),text = "Save Game")
 
 clock = pygame.time.Clock()
 running = True
-
-
-
-
 
 #hyperparams
 maxEpisodes = 100
