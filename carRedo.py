@@ -32,6 +32,158 @@ class Car(object):
         self.drifting = False
         self.driftingOffset = 0
 
+        self.sensorAngles = [0,15,30,45,75,90,180,270,285,315,330,345]
+        #self.sensorAngles = [0]
+
+
+    def getEquation(self,p1,p2):
+
+        if (p2[0] - p1[0]) == 0:
+
+            #supposed to be the case where
+            #x = ?
+            return ["x=?",p1[0]]
+        
+        gradient = (p2[1] - p1[1])/(p2[0] - p1[0])
+
+        #c is y intercept
+        c = p1[1] - gradient * p1[0]
+
+        return [gradient,c]
+
+    #returns false if lines do
+    #not intersect
+    def findPoint(self,e1,e2):
+        #e1[0] is gradient
+        #e1[1] is y intercept
+
+        
+        #print("hhiya",e1,e2)
+        #this is for the case equation is x = ?
+        if e1[0] == "x=?" and e2[0] == "x=?":
+            return False
+        
+        if (e1[0] == "x=?"):
+
+            #this is the ? in "x = ?"
+            x = e1[1]
+
+            #sub x value into y = mx + c
+            y = e1[1] * e2[0] + e2[1]
+            return [x,y]
+
+        elif (e2[0] == "x=?"):
+            x = e2[1]
+            y = e2[1] * e1[0] + e1[1]
+            return [x,y]
+
+        if (e1[0] - e2[0]) == 0:
+            return False
+
+        #print("fddrgfdgf")
+        x = (e2[1] - e1[1])/(e1[0] - e2[0])
+
+        y = x * e1[0] + e1[1]
+
+        return [x,y]
+
+    def getDistance(self,p1,p2):
+        return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+        
+        
+        
+    def getState(self,screen,edges,displaySensors = False):
+        #inter is intersection
+
+        for j in self.sensorAngles:
+            closestWall = 999999999
+            closestInt = None
+            for i in edges:
+
+                edgeP1 = (i[0],i[1])
+                edgeP2 = (i[2],i[3])
+
+                edgeEquation = self.getEquation(edgeP1,edgeP2)
+
+
+                """if edgeEquation[0] != "x=?":
+                    pygame.draw.line(screen, (0,0,200), (edgeP1[0],edgeEquation[0] * edgeP1[0] + edgeEquation[1]),
+                                 (edgeP2[0],edgeEquation[0] * edgeP2[0] + edgeEquation[1]),10)     """           
+                
+                #equations in form [gradient,y intercept]
+
+                carPos = (self.pos[0],720 - self.pos[1])
+
+                #arbitrery constant
+                a = 1000
+
+                #point opposite car
+                oppCar = [carPos[0] + a * math.sin(math.radians(j - self.angle - self.driftingOffset + 180)),carPos[1] +
+                          a * math.cos(math.radians(j - self.angle - self.driftingOffset + 180))]
+                
+                #pygame.draw.line(screen, (0,150,0), (carPos[0], carPos[1]), (oppCar[0],oppCar[1]),2)
+
+                carEquation = self.getEquation(carPos,oppCar)
+
+                """if carEquation[0] != "x=?":
+                    pygame.draw.line(screen, (0,0,200), (carPos[0],carEquation[0] * carPos[0] + carEquation[1]),
+                                 (oppCar[0],carEquation[0] * oppCar[0] + carEquation[1]),10)"""
+                
+
+                intersect = self.findPoint(edgeEquation,carEquation)
+                #print(intersect)
+                #edgeP1[0] = 3
+                #edgeP1[1] = 10
+                
+                #edgeP2[0] = 3
+                #edgeP2[1] = 5
+
+                
+                #edgeP1[0] means x coord
+                if intersect != False:
+                    if edgeP1[0] > edgeP2[0]:
+                        bigCoordX = edgeP1[0]
+                        littleCoordX = edgeP2[0]
+                    else:
+                        bigCoordX = edgeP2[0]
+                        littleCoordX = edgeP1[0]
+
+                    if edgeP1[1] > edgeP2[1]:
+                        bigCoordY = edgeP1[1]
+                        littleCoordY = edgeP2[1]
+                    else:
+                        bigCoordY = edgeP2[1]
+                        littleCoordY = edgeP1[1]
+                        
+
+                    if carPos[0] > oppCar[0]:
+                        bigCoordX2 = carPos[0]
+                        littleCoordX2 = oppCar[0]
+                    else:
+                        bigCoordX2 = oppCar[0]
+                        littleCoordX2 = carPos[0]
+
+                    if carPos[1] > oppCar[1]:
+                        bigCoordY2 = carPos[1]
+                        littleCoordY2 = oppCar[1]
+                    else:
+                        bigCoordY2 = oppCar[1]
+                        littleCoordY2 = carPos[1]
+                        
+                    if ((intersect[0] >= littleCoordX and intersect[0] <= bigCoordX and
+                        intersect[1] >= littleCoordY and intersect[1] <= bigCoordY) and
+                        (intersect[0] >= littleCoordX2 and intersect[0] <= bigCoordX2 and
+                        intersect[1] >= littleCoordY2 and intersect[1] <= bigCoordY2)):
+
+                        
+                        distance = self.getDistance(intersect,carPos)
+                        if distance < closestWall:
+                            closestWall = distance
+                            closestInt = intersect
+                    
+            if displaySensors and closestInt != None:
+                pygame.draw.line(screen, (150,0,0), (carPos[0], carPos[1]), (closestInt[0],closestInt[1]),2)
+        
     def getPos(self):
         #to make it so upwards is positive
         return [self.pos[0],720 - self.pos[1]]
@@ -143,6 +295,7 @@ class Car(object):
     def handleEvents(self,keys):
         
         if self.drifting == False:
+            
             if self.driftingOffset != 0:
                 
                 if self.driftingOffset > 0:
