@@ -386,10 +386,10 @@ class playGame():
         self.carImage = pygame.image.load(os.path.join(self.img_folder,"car.png")).convert()
 
     def display(self,screen):
-        pos = self.car.getPos()
         angle = self.car.getImageAngle()
         newCar = pygame.transform.rotate(self.carImage,360 - angle)
-        screen.blit(newCar,(pos[0] - 6, pos[1] - 15))
+        self.car.draw(screen,newCar)
+        
         #pygame.draw.rect(screen, [255, 255, 255], [pos[0] - 6, pos[1] - 15, 12, 30], False)
         self.map.drawMap(screen,white)
 
@@ -398,7 +398,7 @@ class playGame():
             actions = self.agent.selectAction()
             self.car.performActions(actions)
 
-        self.car.updatePerFrame()
+        self.car.updatePerFrame(self.map.edges)
         self.car.getState(screen,self.map.edges,True)
         if self.viewing:
             self.display(screen)
@@ -414,7 +414,7 @@ class playGame():
 
 class track():
     def __init__(self):
-        #self.edges = [(12,12,35,36),()] x1,y1,x2,y2
+        #self.edges = [(12,12,35,36),()] 
         self.edges = [(210,400,210,260),(210,260,230,200),(230,200,250,180),(250,180,310,150),
                       (310,150,590,150),(590,150,650,180),(650,180,670,200),(670,200,700,260),
                       (700,260,700,350),(700,350,730,370),(730,370,780,370),(780,370,800,350),
