@@ -14,8 +14,8 @@ class Car(object):
     def __init__(self):
         #displacement
         #this is the middle of the car
-        self.pos = np.array([float(0),float(0)])
-
+        self.pos = np.array([float(240),float(300)])
+        self.ogPos = np.array([float(240),float(300)])
         #speed
         self.spd = float(0)
         
@@ -33,9 +33,157 @@ class Car(object):
         self.driftingOffset = 0
 
         self.sensorAngles = [0,15,30,45,75,90,180,270,285,315,330,345]
-        #self.sensorAngles = [0]
+
+        self.disableControl = 0
+
+    def calculateCoords(self):
+        fourCorners = []
+        position = self.getPos()
+        
+        topLeftOffsetX = math.cos(math.radians(self.angle + self.driftingOffset)) * -6
+        topLeftOffsetY = math.sin(math.radians(self.angle + self.driftingOffset)) * 15
+
+        topLeftX = position[0] + topLeftOffsetX
+        topLeftY = position[1] + topLeftOffsetY
+
+        fourCorners.append((topLeftX,topLeftY))
+
+        ######################
+
+        topRightOffsetX = math.cos(math.radians(self.angle + self.driftingOffset)) * 6
+        topRightOffsetY = math.sin(math.radians(self.angle + self.driftingOffset)) * 15
+
+        topRightX = position[0] + topRightOffsetX
+        topRightY = position[1] + topRightOffsetY
+
+        fourCorners.append((topRightX,topRightY))
+
+        #############################
+
+        bottomLeftOffsetX = math.cos(math.radians(self.angle + self.driftingOffset)) * -6
+        bottomLeftOffsetY = math.sin(math.radians(self.angle + self.driftingOffset)) * -15
+
+        bottomLeftX = position[0] + bottomLeftOffsetX
+        bottomLeftY = position[1] + bottomLeftOffsetY
+
+        fourCorners.append((bottomLeftX,bottomLeftY))
+
+        #########################
+
+        bottomRightOffsetX = math.cos(math.radians(self.angle + self.driftingOffset)) * 6
+        bottomRightOffsetY = math.sin(math.radians(self.angle + self.driftingOffset)) * -15
+
+        bottomRightX = position[0] + bottomRightOffsetX
+        bottomRightY = position[1] + bottomRightOffsetY
+
+        fourCorners.append((bottomRightX,bottomRightY))
+
+        return fourCorners
+
+    def convertToEquation(self,point1,point2):
+        #[gradient,y intercept,(x1,y1),(x2,y2)]
+
+        line = self.getEquation(point1,point2)
+
+        return [line[0],line[1],point1,point2]
+        
+    def checkLinesCollide(self,line1,line2):
+        #line 1 and line 2 are in the form:
+        #[gradient,y intercept,(x1,y1),(x2,y2)]
+
+        intersect = self.findPoint((line1[0],line1[1]),(line2[0],line2[1]))
+        if intersect == False:
+            return False
+
+        if line1[2][0] > line1[3][0]:
+            bigCoordX = line1[2][0]
+            littleCoordX = line1[3][0]
+        else:
+            bigCoordX = line1[3][0]
+            littleCoordX = line1[2][0]
+
+        if line1[2][1] > line1[3][1]:
+            bigCoordY = line1[2][1]
+            littleCoordY = line1[3][1]
+        else:
+            bigCoordY = line1[3][1]
+            littleCoordY = line1[2][1]
+            
+
+        if line2[2][0] > line2[3][0]:
+            bigCoordX2 = line2[2][0]
+            littleCoordX2 = line2[3][0]
+        else:
+            bigCoordX2 = line2[3][0]
+            littleCoordX2 = line2[2][0]
+
+        if line2[2][1] > line2[3][1]:
+            bigCoordY2 = line2[2][1]
+            littleCoordY2 = line2[3][1]
+        else:
+            bigCoordY2 = line2[3][1]
+            littleCoordY2 = line2[2][1]
+            
+        if ((intersect[0] >= littleCoordX and intersect[0] <= bigCoordX and
+            intersect[1] >= littleCoordY and intersect[1] <= bigCoordY) and
+            (intersect[0] >= littleCoordX2 and intersect[0] <= bigCoordX2 and
+            intersect[1] >= littleCoordY2 and intersect[1] <= bigCoordY2)):
+            return True
+        
+        return False
+
+    def checkHit(self,edges):
+        #
+        #returns [topLeft,topRight,bottomLeft,bottomRight]
+        fourCorners = self.calculateCoords()
+
+        carLines = []
+
+        carLines.append(self.convertToEquation(fourCorners[0],fourCorners[1]))
+        carLines.append(self.convertToEquation(fourCorners[1],fourCorners[3]))
+        carLines.append(self.convertToEquation(fourCorners[0],fourCorners[2]))
+        carLines.append(self.convertToEquation(fourCorners[2],fourCorners[3]))
+
+        edgeLines = []
+        #x1,y1,x2,y2
+        for i in edges:
+            edgeLines.append(self.convertToEquation((i[0],i[1]),(i[2],i[3])))
 
 
+        
+        for i in edgeLines:
+            for j in carLines:
+                answer = self.checkLinesCollide(i,j)
+                if answer:
+                    return True
+
+        return False
+            
+
+    def draw(self,screen,newCar):
+        pos = self.getPos()
+        #screen.blit(newCar,(pos[0] - 6, pos[1] - 15))
+        """
+        screen.blit(newCar,(pos[0] - 15 * math.sin(math.radians(self.angle)) - 6 * math.cos(math.radians(self.angle)),
+                            pos[1] - 15 * math.cos(math.radians(self.angle)) - 6 * math.sin(math.radians(self.angle))))
+        """
+        
+        if self.angle <= 90:
+            screen.blit(newCar,(pos[0] - 15 * math.sin(math.radians(self.angle)) - 6 * math.cos(math.radians(self.angle)),
+                                pos[1] - 15 * math.cos(math.radians(self.angle)) - 6 * math.sin(math.radians(self.angle))))
+        elif self.angle <= 180:
+            screen.blit(newCar,(pos[0] - 15 * math.sin(math.radians(180 - self.angle)) - 6 * math.cos(math.radians(180 - self.angle)),
+                                pos[1] - 15 * math.cos(math.radians(180 - self.angle)) - 6 * math.sin(math.radians(180 - self.angle))))
+        
+        elif self.angle <= 270:
+            screen.blit(newCar,(pos[0] - 15 * math.sin(math.radians(self.angle - 180)) - 6 * math.cos(math.radians(self.angle - 180)),
+                                pos[1] - 15 * math.cos(math.radians(self.angle - 180)) - 6 * math.sin(math.radians(self.angle - 180))))
+        
+        else:
+            screen.blit(newCar,(pos[0] - 15 * math.sin(math.radians(360 - self.angle)) - 6 * math.cos(math.radians(360 - self.angle)),
+                                pos[1] - 15 * math.cos(math.radians(360 - self.angle)) - 6 * math.sin(math.radians(360 - self.angle))))
+        
+        
     def getEquation(self,p1,p2):
 
         if (p2[0] - p1[0]) == 0:
@@ -96,7 +244,7 @@ class Car(object):
         #inter is intersection
 
         for j in self.sensorAngles:
-            closestWall = 999999999
+            closestWall = 5000
             closestInt = None
             for i in edges:
 
@@ -183,6 +331,7 @@ class Car(object):
                     
             if displaySensors and closestInt != None:
                 pygame.draw.line(screen, (150,0,0), (carPos[0], carPos[1]), (closestInt[0],closestInt[1]),2)
+
         
     def getPos(self):
         #to make it so upwards is positive
@@ -266,18 +415,33 @@ class Car(object):
         self.pos[0] += self.spd * math.sin(math.radians(self.angle))
         self.pos[1] += self.spd * math.cos(math.radians(self.angle))
 
+
+
             
     #update the pivot point every frame
     def updatePivot(self):
         self.pivot = np.add(self.pos, self.pointerVector)
-        
+
+    def handleCollisions(self,edges):
+        if self.checkHit(edges):
+            self.pos[0] = self.ogPos[0]
+            self.pos[1] = self.ogPos[1]
+            self.spd = float(0)            
+            self.acc = float(0)
+            self.angle = float(0)
+            self.drifting = False
+            self.driftingOffset = 0
+            self.disableControl = 20
     
-    def updatePerFrame(self):
+    def updatePerFrame(self,edges):
         #print("accP",self.acc)
         self.updatePos()
         self.updateVelocity()
         self.resist()
         self.acc = float(0)
+
+        self.handleCollisions(edges)
+        
         #print("pos",self.pos)
         #print("vel",self.spd)
         #print("acc",self.acc)
@@ -293,76 +457,86 @@ class Car(object):
             self.angle = 359 + self.angle 
 
     def handleEvents(self,keys):
-        
-        if self.drifting == False:
+
+        if self.disableControl > 0:
+            self.disableControl -= 1
             
-            if self.driftingOffset != 0:
+        else:
+            if self.drifting == False:
                 
-                if self.driftingOffset > 0:
+                if self.driftingOffset != 0:
                     
-                    if self.driftingOffset > cfg.DRIFT_OFFSET:
-                        self.increaseAngle(self.driftingOffset - cfg.DRIFT_OFFSET)
-                    else:
-                        self.decreaseAngle(self.driftingOffset)
+                    if self.driftingOffset > 0:
                         
-                elif self.driftingOffset < 0:
-                    
-                    if self.driftingOffset < -cfg.DRIFT_OFFSET:
-                        self.decreaseAngle(abs(self.driftingOffset) - cfg.DRIFT_OFFSET)
+                        if self.driftingOffset > cfg.DRIFT_OFFSET:
+                            self.increaseAngle(self.driftingOffset - cfg.DRIFT_OFFSET)
+                        else:
+                            self.decreaseAngle(self.driftingOffset)
+                            
+                    elif self.driftingOffset < 0:
                         
-                    else:
-                        self.decreaseAngle(abs(self.driftingOffset))
+                        if self.driftingOffset < -cfg.DRIFT_OFFSET:
+                            self.decreaseAngle(abs(self.driftingOffset) - cfg.DRIFT_OFFSET)
+                            
+                        else:
+                            self.decreaseAngle(abs(self.driftingOffset))
+                        
+                    self.driftingOffset = 0
                     
-                self.driftingOffset = 0
-                
-            if keys[pygame.K_a] and keys[pygame.K_SPACE] and self.spd > 3:
-                self.drifting = "left"
+                if keys[pygame.K_a] and keys[pygame.K_SPACE] and self.spd > 3:
+                    self.drifting = "left"
 
-                #rotate clockwise
+                    #rotate clockwise
 
-                self.driftingOffset = -cfg.DRIFT_INITIAL
+                    self.driftingOffset = -cfg.DRIFT_INITIAL
 
-            elif keys[pygame.K_d] and keys[pygame.K_SPACE] and self.spd > 3:
-                self.drifting = "right"
+                elif keys[pygame.K_d] and keys[pygame.K_SPACE] and self.spd > 3:
+                    self.drifting = "right"
+
+                    
+                    self.driftingOffset = cfg.DRIFT_INITIAL
+                    
+                elif keys[pygame.K_a]:
+                    self.turnLeft()
+                    
+                elif keys[pygame.K_d]:
+                    self.turnRight()
+                    
+
+                    
+                elif keys[pygame.K_SPACE] or keys[pygame.K_s]:
+                    self.brake()
 
                 
-                self.driftingOffset = cfg.DRIFT_INITIAL
-                
-            elif keys[pygame.K_a]:
-                self.turnLeft()
-                
-            elif keys[pygame.K_d]:
-                self.turnRight()
-                
+                if keys[pygame.K_w]:
+                    self.accelerate()
 
-                
-            elif keys[pygame.K_SPACE] or keys[pygame.K_s]:
-                self.brake()
+            elif self.drifting == "right":
+                if self.driftingOffset < 45:
+                    self.driftingOffset += 1
 
+                if keys[pygame.K_d]:                
+                    self.accelerate()
+                    
+                if not keys[pygame.K_SPACE]:
+                    self.drifting = False
+                    
+                elif keys[pygame.K_d]:
+                    self.turnRight(drift = True)            
+                
+            elif self.drifting == "left":
+
+                if keys[pygame.K_a]:                
+                    self.accelerate()
+                
+                if self.driftingOffset > -45:
+                    self.driftingOffset -= 1
+                
+                if not keys[pygame.K_SPACE]:
+                    self.drifting = False
             
-            if keys[pygame.K_w]:
-                self.accelerate()
-
-        elif self.drifting == "right":
-            if self.driftingOffset < 45:
-                self.driftingOffset += 1
-            self.accelerate()
-            if not keys[pygame.K_SPACE]:
-                self.drifting = False
-                
-            elif keys[pygame.K_d]:
-                self.turnRight(drift = True)            
-            
-        elif self.drifting == "left":
-            if self.driftingOffset > -45:
-                self.driftingOffset -= 1
-            self.accelerate()
-            
-            if not keys[pygame.K_SPACE]:
-                self.drifting = False
-        
-            elif keys[pygame.K_a]:
-                self.turnLeft(drift = True)          
+                elif keys[pygame.K_a]:
+                    self.turnLeft(drift = True)          
         
         
         
